@@ -145,6 +145,8 @@ gatk CreateSequenceDictionary \
     -   `modelBegin.seg.` Initial segmentation before smoothing. From `ModelSegments` — diagnostic
 
     -   `.modelFinal.seg` Final smoothed segmentation. From `ModelSegments` — key segmentation output.
+<<<<<<< Updated upstream
+=======
 
     -   `.modelBegin.af.param`, `.modelBegin.cr.param`- Posterior parameter summaries (Initial). Used for QC, advanced modeling checks.
 
@@ -157,9 +159,25 @@ gatk CreateSequenceDictionary \
     -   `.called.seg`. **Final called copy ratio segments** (loss/neutral/gain/amplification). Main biological output.
 
     -   `.called.igv.seg`. Same, formatted for IGV. For CNV inspection across samples.
+>>>>>>> Stashed changes
+
+    -   `.modelBegin.af.param`, `.modelBegin.cr.param`- Posterior parameter summaries (Initial). Used for QC, advanced modeling checks.
+
+<<<<<<< Updated upstream
+    -   `.modelFinal.af.param`, `.modelFinal.cr.param`. Posterior parameter summaries (final). Reflect refined model fit.
+
+    -   `.cr.seg`. **Copy-ratio segments**. Input to `CallCopyRatioSegments`.
+
+    -   `.cr.igv.seg`, `.af.igv.seg`. IGV-formatted copy ratio / allele fraction segments. Load directly in IGV for visualization.
+
+    -   `.called.seg`. **Final called copy ratio segments** (loss/neutral/gain/amplification). Main biological output.
+
+    -   `.called.igv.seg`. Same, formatted for IGV. For CNV inspection across samples.
 
 <!-- -->
 
+=======
+>>>>>>> Stashed changes
 -   Interpretation of results table
 
     -   Example: Copy number ≈ 2 × 2\^(mean_log2_copy_ratio). mean_log2_copy_ratio = 1.826993. Copy number ≈ 2 × 2\^(1.826993) ≈ 7.1 copies
