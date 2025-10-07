@@ -1,7 +1,11 @@
-# Copy Number Variation (CNV) Analysis Pipelines
+## QC pipelines
+
+## Mapping pipelines
+
+## Copy Number Variation (CNV) Analysis Pipelines
 GATK & CNVkit Workflows for Targeted and Whole-Exome Sequencing
 
-## Overview
+### Overview
 This repository provides reproducible, HPC-ready workflows for copy number variation (CNV) analysis using two independent pipelines:
 1. GATK CNV Workflow — Best-practice CNV calling using the Broad Institute’s Genome Analysis Toolkit (GATK).
 2. CNVkit Workflow — Coverage-based CNV detection using CNVkit for targeted and hybrid capture sequencing.
@@ -11,7 +15,7 @@ Each workflow includes:
 - Step-by-step setup and execution guides
 - Notes on parameters, expected outputs, and biological interpretation
 
-## Reproducibility
+### Reproducibility
 All scripts are fully modular and can be customized per project.
 Each step includes:
 - Input and output definitions
