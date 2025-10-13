@@ -136,3 +136,12 @@ module load picard/3.2.0-gcc-13.1.0
 | **`cnvkit_normal_refs.sh`** | Builds reference CNNs (equivalent to GATK PoN) |
 | **`cnvkit_batch.sh`** | Runs CNVkit analysis pipeline for each sample |
 | **`cnvkit_call.sh`** | Calls discrete CN states and filters low coverage |
+
+
+
+### October 13th
+
+-   Generate gene metrics with following thresholds
+
+    -   threshold (log₂ Ratio) > 1 = >\~4 copies
+    -   `cnvkit.py genemetrics <WIAB_IDPE_?.call.cns> -s <WIAB_IDPE_?.marked.cns> -t 1 -m 5 -o WIAB_IDPE_genemetrics_t_1.txt -x x`
