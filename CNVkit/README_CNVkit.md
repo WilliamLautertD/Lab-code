@@ -145,3 +145,5 @@ module load picard/3.2.0-gcc-13.1.0
 
     -   threshold (log₂ Ratio) > 1 = >\~4 copies
     -   `cnvkit.py genemetrics <WIAB_IDPE_?.call.cns> -s <WIAB_IDPE_?.marked.cns> -t 1 -m 5 -o WIAB_IDPE_genemetrics_t_1.txt -x x`
+    -   `WIAB_IDPE_P53_treated_GeneMetrics_t_1.xlsx` - Genemetrics results for P53-/- treated with SETD2i
+    
