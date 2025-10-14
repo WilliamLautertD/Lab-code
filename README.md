@@ -1,4 +1,6 @@
 ## QC pipelines
+deeptools tools for exploring deep sequencing data
+- Analysis of correlation of bamfiles
 
 ## Mapping pipelines
 
