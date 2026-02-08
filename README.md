@@ -28,6 +28,11 @@ To rerun or adapt:
 - Submit each job to the HPC queue using sbatch
 - Review logs and resulting CNV tables/plots
 
+## Duplicate and fusion genes
+- Manual inspection of fusioned genes 
+- Using the "supplementary", "mates on different chromosomes", and mates on same chromosomes but in distant than expected" reads. 
+- Compare it with Normal. 
+
 ## Citation
 relevant tools:
 - GATK CNV – Benjamin et al., Nature Genetics (2013)
