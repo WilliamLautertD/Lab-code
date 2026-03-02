@@ -19,7 +19,7 @@ module load gatk/4.4.0.0-gcc-13.1.0
 DIR="/home/lauterw/WIAB_IDPE/results/GATK_CNV/"
 BAM="/home/lauterw/WIAB_IDPE/results/bwa_output/marked_duplicates"
 COUNTS_RPE="$DIR/counts/treated/RPE"
-COUNTS_P53="$DIR/counts/treated/P53"
+COUNTS_P53="$DIR/counts/treated/P53_merged"
 PON_dir="$DIR/pon"
 DENOISED_dir="$DIR/denoised"
 
@@ -36,7 +36,7 @@ mkdir -p "$DENOISED_dir/P53"
 
 # Running DenoiseReadCounts
 ## RPE SETD2i
-parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
     
     gatk DenoiseReadCounts \
         -I "$COUNTS_RPE/{}.counts.hdf5" \
@@ -47,12 +47,20 @@ parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
 ' :::: "$BAM/RPE_SETD2i_WIAB_IDPE.txt"
 
 ## P53 SETD2i
-parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
     
     gatk DenoiseReadCounts \
         -I "$COUNTS_P53/{}.counts.hdf5" \
         --count-panel-of-normals "$PON_dir/P53/pon_P53.hdf5" \
-        --standardized-copy-ratios "$DENOISED_dir/P53/{}.standardizedCR.tsv" \
-        --denoised-copy-ratios "$DENOISED_dir/P53/{}.denoisedCR.tsv"
+        --standardized-copy-ratios "$DENOISED_dir/P53_merged/{}.standardizedCR.tsv" \
+        --denoised-copy-ratios "$DENOISED_dir/P53_merged/{}.denoisedCR.tsv"
 
 ' :::: "$BAM/P53_SETD2i_WIAB_IDPE.txt"
+
+
+gatk DenoiseReadCounts \
+	-I "$COUNTS_P53/WIAB_IDPE_P53_merged.counts.hdf5" \
+        --count-panel-of-normals "$PON_dir/P53/pon_P53.hdf5" \
+        --standardized-copy-ratios "$DENOISED_dir/P53_merged/WIAB_IDPE_P53_merged.standardizedCR.tsv" \
+        --denoised-copy-ratios "$DENOISED_dir/P53_merged/WIAB_IDPE_P53_merged.denoisedCR.tsv"
+

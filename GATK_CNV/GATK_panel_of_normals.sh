@@ -42,7 +42,6 @@ gatk CreateReadCountPanelOfNormals \
 
 #Panel of Normal - P53
 gatk CreateReadCountPanelOfNormals \
-    -I "$DIR/counts/normal/P53/WIAB_IDPE_19.counts.hdf5" \
     -I "$DIR/counts/normal/P53/WIAB_IDPE_23.counts.hdf5" \
     -I "$DIR/counts/normal/P53/WIAB_IDPE_25.counts.hdf5" \
     -I "$DIR/counts/normal/P53/WIAB_IDPE_27.counts.hdf5" \
@@ -50,3 +49,5 @@ gatk CreateReadCountPanelOfNormals \
     -I "$DIR/counts/normal/P53/WIAB_IDPE_31.counts.hdf5" \
     --annotated-intervals  "$ANN_INTER" \
     -O "$PON_dir/P53/pon_P53.hdf5"
+
+#   -I "$DIR/counts/normal/P53/WIAB_IDPE_19.counts.hdf5" 

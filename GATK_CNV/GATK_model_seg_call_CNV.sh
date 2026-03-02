@@ -34,7 +34,7 @@ mkdir -p "$SEG_dir/RPE_SETD2i" "$SEG_dir/P53_SETD2i"
 mkdir -p "$SEG_dir/RPE_SETD2i_teste_default" "$SEG_dir/P53_SETD2i_teste_default"
 
 # Run ModelSegments and CallCopyRatioSegments - RPE SETD2i
-parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
     gatk ModelSegments \
         --denoised-copy-ratios "$DENOISED_dir/RPE/{}.denoisedCR.tsv" \
         --output "$SEG_dir/RPE_SETD2i" \
@@ -42,12 +42,12 @@ parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
         --number-of-changepoints-penalty-factor 2.0 &&
 
     gatk CallCopyRatioSegments \
-        -I "$SEG_dir/RPE_SETD2i/{}.cr.seg" \
-        -O "$SEG_dir/RPE_SETD2i/{}.called.seg"
+        --input "$SEG_dir/RPE_SETD2i/{}.cr.seg" \
+        --output "$SEG_dir/RPE_SETD2i/{}.called.seg"
 ' :::: "$BAM/RPE_SETD2i_WIAB_IDPE.txt"
 
 # Run ModelSegments and CallCopyRatioSegments - P53 SETD2i
-parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
     gatk ModelSegments \
         --denoised-copy-ratios "$DENOISED_dir/P53/{}.denoisedCR.tsv" \
         --output "$SEG_dir/P53_SETD2i" \
@@ -55,37 +55,64 @@ parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
         --number-of-changepoints-penalty-factor 2.0 &&
 
     gatk CallCopyRatioSegments \
-        -I "$SEG_dir/P53_SETD2i/{}.cr.seg" \
-        -O "$SEG_dir/P53_SETD2i/{}.called.seg"
+        --input "$SEG_dir/P53_SETD2i/{}.cr.seg" \
+        --output "$SEG_dir/P53_SETD2i/{}.called.seg"
 ' :::: "$BAM/P53_SETD2i_WIAB_IDPE.txt"
-
-
 
 
 # ──────────────────────────────────────────────
 # RPE SETD2i teste default samples
 # ──────────────────────────────────────────────
-parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
     gatk ModelSegments \
         --denoised-copy-ratios "$DENOISED_dir/RPE/{}.denoisedCR.tsv" \
         --output "$SEG_dir/RPE_SETD2i_teste_default" \
         --output-prefix {} &&
 
     gatk CallCopyRatioSegments \
-        -I "$SEG_dir/RPE_SETD2i_teste_default/{}.cr.seg" \
-        -O "$SEG_dir/RPE_SETD2i_teste_default/{}.called.seg"
+        --input "$SEG_dir/RPE_SETD2i_teste_default/{}.cr.seg" \
+        --output "$SEG_dir/RPE_SETD2i_teste_default/{}.called.seg"
 ' :::: "$BAM/RPE_SETD2i_WIAB_IDPE.txt"
 
 # ──────────────────────────────────────────────
 # P53 SETD2i teste default samples
 # ──────────────────────────────────────────────
-parallel --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
     gatk ModelSegments \
         --denoised-copy-ratios "$DENOISED_dir/P53/{}.denoisedCR.tsv" \
         --output "$SEG_dir/P53_SETD2i_teste_default" \
         --output-prefix {} &&
 
     gatk CallCopyRatioSegments \
-        --I "$SEG_dir/P53_SETD2i_teste_default/{}.cr.seg" \
-        -O "$SEG_dir/P53_SETD2i_teste_default/{}.called.seg"
+        --input "$SEG_dir/P53_SETD2i_teste_default/{}.cr.seg" \
+        --output "$SEG_dir/P53_SETD2i_teste_default/{}.called.seg"
 ' :::: "$BAM/P53_SETD2i_WIAB_IDPE.txt"
+
+# ---------------------------------------------
+# Teste number-of-change-points penalty factor
+# ---------------------------------------------
+
+# Run ModelSegments and CallCopyRatioSegments - RPE SETD2i
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 5 --halt soon,fail=10 '
+    gatk ModelSegments \
+        --denoised-copy-ratios "$DENOISED_dir/P53/{}.denoisedCR.tsv" \
+        --output "$SEG_dir/test_number_of_changepoints_penalty_factor_3" \
+        --output-prefix {} \
+        --number-of-changepoints-penalty-factor 3.0 &&
+
+    gatk CallCopyRatioSegments \
+        --input "$SEG_dir/test_number_of_changepoints_penalty_factor_3/{}.cr.seg" \
+        --output "$SEG_dir/test_number_of_changepoints_penalty_factor_3/{}.called.seg"
+' :::: "$BAM/P53_SETD2i_WIAB_IDPE.txt"
+
+
+# Run ModelSegments and CallCopyRatioSegments - P53 SETD2i
+gatk ModelSegments \
+        --denoised-copy-ratios "$DENOISED_dir/P53_merged/WIAB_IDPE_P53_merged.denoisedCR.tsv" \
+        --output "$SEG_dir/P53_SETD2i_merged" \
+        --output-prefix WIAB_IDPE_P53_merged \
+        --number-of-changepoints-penalty-factor 2.0
+
+gatk CallCopyRatioSegments --input "$SEG_dir/P53_SETD2i_merged/WIAB_IDPE_P53_merged.cr.seg" \
+	--output "$SEG_dir/P53_SETD2i_merged/WIAB_IDPE_P53_merged.called.seg" \
+	--exclude-intervals chr Y

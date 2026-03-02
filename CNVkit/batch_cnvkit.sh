@@ -23,7 +23,8 @@ REF="/home/lauterw/WIAB_IDPE/results/cnaKit/concat_refs"
 
 #Non-treated
 LIST_RPE="$REF/RPE_Ref_WIAB_IDPE.txt"
-LIST_P53="$REF/P53_loss_Ref_WIAB_IDPE.txt"
+#LIST_P53="$REF/P53_loss_Ref_WIAB_IDPE.txt"
+#LIST_P53="$REF/P53_loss_Ref_WIAB_IDPE.txt"
 
 TARGETS="/home/lauterw/WIAB_IDPE/results/cnaKit/inter_files/my_targets_WIAB_IDPE.bed"
 ANTITARGETS="/home/lauterw/WIAB_IDPE/results/cnaKit/inter_files/my_antitargets_WIAB_IDPE.bed"
@@ -32,7 +33,7 @@ export BAM OUTDIR LIST_RPE LIST_P53 TARGETS ANTITARGETS REF
 
 export TMPDIR='/rs01/home/lauterw/tmp'
 
-parallel --tmpdir "$TMPDIR" --jobs 1 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 1 --halt soon,fail=10 '
 
     WIAB_IDPE={}
 
@@ -46,16 +47,23 @@ parallel --tmpdir "$TMPDIR" --jobs 1 --halt soon,fail=10 '
 
 ' :::: "$LIST_RPE"
 
-parallel --tmpdir "$TMPDIR" --jobs 1 --halt soon,fail=10 '
+parallel --dry-run --tmpdir "$TMPDIR" --jobs 1 --halt soon,fail=10 '
 
     WIAB_IDPE={}
 
     BAM="$BAM/${WIAB_IDPE}.marked.bam"
     cnvkit.py batch "$BAM" -r "$REF/P53_reference.cnn" -p 30 \
-	--output-dir "$OUTDIR/WIAB_P53_vs_P53_ref" \
+	--output-dir "$OUTDIR/WIAB_P53_merged_new" \
 	--diagram \
 	--scatter \
 	--drop-low-coverage
 
 ' :::: "$LIST_P53"
+
+
+cnvkit.py batch bwa_output/marked_duplicates/P53_SETD2i/WIAB_IDPE_P53_merged_sorted.bam -r "$REF/P53_reference.cnn" -p 30 \
+	--output-dir "$OUTDIR/WIAB_P53_merged_new" \
+	--diagram \
+	--scatter \
+	--drop-low-coverage
 

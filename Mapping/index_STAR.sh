@@ -22,8 +22,9 @@ mkdir -p STARindex
 
 # Run STAR index
 STAR --runMode genomeGenerate \
-        --runThreadN 32 \
-        --genomeDir STARindex \
-        --genomeFastaFiles $file \
-        --sjdbGTFfile "$(dirname $file)/$(basename $file .fna).gtf" \
-        --sjdbOverhang 49
+	--runThreadN 32 \
+	--genomeDir STARindex \
+	--genomeFastaFiles $file \
+	--sjdbGTFfile "$(dirname $file)/$(basename $file .fna).gtf" \
+    	--sjdbOverhang 49
+

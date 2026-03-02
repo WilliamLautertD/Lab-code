@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBACTH -p general
 #SBATCH --job-name=index_Hs_genome_bwa
 #SBATCH --output=index_Hs_genome_bwa_output.log
 #SBATCH --error=index_Hs_genome_bwa_output.err
@@ -13,7 +14,7 @@
 # module load bwa
 
 # Path to genome FASTA
-file="/home/lauterw/refs/human_GRCh38_p14/GRCh38.p14_genomic.fna"
+file="/home/lauterw/refs/E_coli_MG1655/E_coli_MG1655.fna"
 
 # Output index prefix
 prefix=$(basename "$file" .fna)
@@ -22,6 +23,5 @@ prefix=$(basename "$file" .fna)
 cd $(dirname "$file")
 
 # Run BWA index
-echo bwa index -p "$prefix" "$file"
-
+bwa index "$file"
 

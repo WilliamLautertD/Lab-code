@@ -27,9 +27,9 @@ export TMPDIR='/rs01/home/lauterw/tmp'
 
 export REF DATADIR LIST OUTDIR
 
-cnvkit.py reference "$OUTDIR"/*.RPE.targetcoverage.cnn "$OUTDIR"/*.RPE.antitargetcoverage.cnn \
-    -f $REF -o "$OUTDIR/RPE_reference.cnn" \
-    -c
+#cnvkit.py reference "$OUTDIR"/*.RPE.targetcoverage.cnn "$OUTDIR"/*.RPE.antitargetcoverage.cnn \
+#    -f $REF -o "$OUTDIR/RPE_reference.cnn" \
+#    -c
 
 cnvkit.py reference "$OUTDIR"/*.P53_loss.targetcoverage.cnn "$OUTDIR"/*.P53_loss.antitargetcoverage.cnn \
     -f $REF -o "$OUTDIR/P53_reference.cnn" \

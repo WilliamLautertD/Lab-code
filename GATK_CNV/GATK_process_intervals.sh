@@ -33,7 +33,7 @@ export DIR REF_gen TARGETS_dir TARGETS_illumina TMPDIR
 mkdir -p "$TARGETS_dir"
 
 # Run PreprocessIntervals
-gatk --dry-run PreprocessIntervals \
+gatk PreprocessIntervals \
     -R "$REF_gen/hg38.fa" \
     --interval-merging-rule OVERLAPPING_ONLY \
     -L "$TARGETS_illumina" \
@@ -42,6 +42,6 @@ gatk --dry-run PreprocessIntervals \
 
 gatk AnnotateIntervals \
   -R "$REF_gen/hg38.fa" \
-  -L "$TARGETS_dir/preprocessed_intervals.interval_list" \
   --interval-merging-rule OVERLAPPING_ONLY \
+  -L "$TARGETS_dir/preprocessed_intervals.interval_list" \
   -O "$TARGETS_dir/annotated_intervals.tsv"
