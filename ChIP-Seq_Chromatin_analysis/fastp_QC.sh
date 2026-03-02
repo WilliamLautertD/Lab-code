@@ -30,19 +30,19 @@ export DATADIR LIST OUTDIR
 # Running FASTQC on raw reads
 parallel -j 5 --dry-run '
     echo fastqc "${DATADIR}/{}_L001_R1_001.fastq.gz" -o ${DATADIR}/qc/
-    conda run qc_analysis fastqc \
+    conda run -n qc_analysis fastqc \
         "${DATADIR}/{}_L001_R1_001.fastq.gz" \
         -o ${DATADIR}/qc/ -t 20
     
     echo fastqc "${DATADIR}/{}_L001_R2_001.fastq.gz" -o ${DATADIR}/qc/
-    conda run qc_analysis fastqc \
+    conda run -n qc_analysis fastqc \
         "${DATADIR}/{}_L001_R2_001.fastq.gz" \
         -o ${DATADIR}/qc/ -t 20
 ' :::: $LIST
 
 # Running fastp for trimming
 parallel -j 5 --dry-run '
-    conda run qc_analysis fastp \
+    conda run -n qc_analysis fastp \
     --in1 "${DATADIR}/{}_L001_R1_001.fastq.gz" \
     --in2 "${DATADIR}/{}_L001_R2_001.fastq.gz" \
     --out1 "${OUTDIR}/{}_trimmed_R1.fastq.gz" \
@@ -52,9 +52,9 @@ parallel -j 5 --dry-run '
 
 # QC report for trimmed reads
 # FastQC
-echo conda run qc_analysis fastqc $OUTDIR/* -o $OUTDIR/qc/ -t 20
+echo conda run -n qc_analysis fastqc $OUTDIR/* -o $OUTDIR/qc/ -t 20
 
 # MultiQC
-echo conda run qc_analysis multiqc $OUTDIR/qc/fastqc/ \
+echo conda run -n qc_analysis multiqc $OUTDIR/qc/fastqc/ \
     --outdir $OUTDIR/qc/multiqc \
     --title "MultiQC Report"
