@@ -52,9 +52,9 @@ parallel -j 5 --dry-run '
 
 # QC report for trimmed reads
 # FastQC
-echo fastqc $OUTDIR/* -o $OUTDIR/qc/ -t 20
+echo conda run qc_analysis fastqc $OUTDIR/* -o $OUTDIR/qc/ -t 20
 
 # MultiQC
-echo multiqc $OUTDIR/qc/fastqc/ \
+echo conda run qc_analysis multiqc $OUTDIR/qc/fastqc/ \
     --outdir $OUTDIR/qc/multiqc \
     --title "MultiQC Report"
