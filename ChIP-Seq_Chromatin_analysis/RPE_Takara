@@ -1,0 +1,127 @@
+#!/bin/bash
+#SBATCH -p general
+#SBATCH --job-name=mapping_bwa
+#SBATCH --output=mapping_bwa_output.log
+#SBATCH --error=mapping_bwa_output.err
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=100
+#SBATCH --time=10:00:00
+#SBATCH --mail-user=William.LautertDutra@fccc.edu
+#SBATCH --mail-type=END,FAIL
+
+#--------------------
+# 1 - Load modules 
+# Load modules (if needed)
+module load bwa/0.7.17-gcc-13.1.0
+module load samtools/1.17-gcc-13.1.0
+
+#--------------------
+# 2 - Load input files
+# List of fastq files
+LIST="${DATADIR}/filenames.txt"
+
+#--------------------
+# Define constants
+# QC
+DATADIR="/home/lauterw/RPE_Takara_Chip_Seq_Test/Takara_ChIP_Seq_Test_6_Cycles/"
+LIST="${DATADIR}/filenames.txt"
+OUTDIR_TRIM="${DATADIR}/data/trimmed"
+OUTDIR_QC="${DATADIR}/data/qc"
+
+# Make output directory if it doesn't exist
+mkdir -p $OUTDIR_TRIM
+mkdir -p $OUTDIR_QC/qc
+
+#--------------------
+# Mapping 
+REF="/home/lauterw/refs/human_hg19_igenome/hg19.fa"
+OUTDIR_BAM="${DATADIR}/bwa_mapping_hg19"
+
+# Make directory if it doesn't exist
+mkdir -p "$OUTDIR_BAM"
+mkdir -p "$OUTDIR_bam/rmdupl_duplicates"
+
+#--------------------
+# Set temporary directory for GNU Parallel
+TMPDIR='/rs01/home/lauterw/tmp'
+mkdir -p "$TMPDIR"
+
+#--------------------
+# export variables for parallel
+export DATADIR LIST OUTDIR_QC OUTDIR_TRIM REF DATADIR_TRIM OUTDIR_BAM TMPDIR
+
+# Export tmp directory for fastp
+export TMPDIR="${SLURM_TMPDIR:-$HOME/tmp}"
+mkdir -p "$TMPDIR"
+export JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$TMPDIR"
+
+#--------------------
+# 3 - Quality Analysis 
+# Running FASTQC on raw reads
+parallel --tmpdir "$TMPDIR" -j 5 '
+    echo fastqc "${DATADIR}/data/{}_L001_R1_001.fastq.gz" -o ${OUTDIR_QC}
+    conda run -n qc_analysis fastqc \
+        "${DATADIR}/data/{}_L001_R1_001.fastq.gz" \
+        -o ${OUTDIR_QC} 
+    
+    echo fastqc "${DATADIR}/data/_L001_R2_001.fastq.gz" -o ${OUTDIR_QC}
+    conda run -n qc_analysis fastqc \
+        "${DATADIR}/data/{}_L001_R2_001.fastq.gz" \
+        -o ${OUTDIR_QC} 
+' :::: $LIST
+
+# Running fastp for trimming
+parallel --tmpdir "$TMPDIR" -j 3 '
+    conda run -n qc_analysis fastp \
+    --in1 "${DATADIR}/data/{}_L001_R1_001.fastq.gz" \
+    --in2 "${DATADIR}/data/{}_L001_R2_001.fastq.gz" \
+    --out1 "${OUTDIR_TRIM}/{}_trimmed_R1.fastq.gz" \
+    --out2 "${OUTDIR_TRIM}/{}_trimmed_R2.fastq.gz" \
+    --thread 20
+' :::: $LIST
+
+# QC report for trimmed reads
+# FastQC
+conda run -n qc_analysis \
+  fastqc ${OUTDIR_TRIM}/*.fastq.gz \
+  -o ${OUTDIR_QC} -t 5
+
+# MultiQC
+conda run -n qc_analysis multiqc ${OUTDIR_QC} \
+    --outdir ${OUTDIR_QC}/multiqc \
+    --title "MultiQC Report - Takara_ChIP_Seq_Test_6_Cycles"
+
+
+#--------------------
+# 4 - Mapping reads to genome 
+# Mapping Reads
+parallel -j 4 --halt soon,fail=10 '
+    READS={}
+    
+    R1="'$OUTDIR_TRIM'/${READS}_trimmed_R1.fastq.gz"
+    R2="'$OUTDIR_TRIM'/${READS}_trimmed_R2.fastq.gz"
+    
+    OUTBAM="'$OUTDIR_BAM/rmdupl_duplicates'/${READS}.sorted.rmdup.bam"
+
+    TMPPFX="${TMPDIR}/${READS}.{#}"
+
+    echo "Processing $READS..."
+
+    bwa mem -t 20 "'$REF'" "$R1" "$R2" | \
+        samtools collate -@ 15 -O -u - | \
+        samtools fixmate -@ 15 -m -u - - | \
+        samtools sort -@ 15 -T "${TMPPFX}.sort" -u - | \
+        samtools markdup -@ 15 - - | \
+        samtools view -@ 15 -b -q 30 -F 4 -F 256 -F 2048 -F 1024 - | \
+        samtools sort -@ 15 -T "${TMPPFX}.finalsort" -o "${OUTBAM}" - 
+
+    samtools index "$OUTBAM"
+
+    samtools flagstat -@ 15 -O tsv "$OUTBAM" > "${OUTBAM%.bam}.flagstats.tsv"
+
+    echo "Finished $READS"
+
+' :::: "$LIST"
+
+
