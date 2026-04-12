@@ -16,10 +16,10 @@ module load samtools/1.17-gcc-13.1.0
 
 # Define constants
 REF="/home/lauterw/refs/human_hg19_igenome/hg19.fa"
-DATADIR="/home/lauterw/RPE_Takara_Chip_Seq_Test/02_12_2026_Takara_Test_with_size_selection/data/trimmed"
-LIST="/home/lauterw/RPE_Takara_Chip_Seq_Test/02_12_2026_Takara_Test_with_size_selection/filenames.txt"
+DATADIR="/home/lauterw/RPE_Takara_Chip_Seq_Test/02_26_2026_RPE_Takara_ChIP_Seq_Test_3/data/trimmed"
+LIST="/home/lauterw/RPE_Takara_Chip_Seq_Test/02_26_2026_RPE_Takara_ChIP_Seq_Test_3/filenames.txt"
 
-OUTDIR="${DATADIR}/bwa_mapping_hg19"
+OUTDIR="/home/lauterw/RPE_Takara_Chip_Seq_Test/02_26_2026_RPE_Takara_ChIP_Seq_Test_3/results/bwa_mapping_hg19"
 
 mkdir -p "$OUTDIR"
 mkdir -p "$OUTDIR/rmdupl_duplicates"
@@ -48,7 +48,7 @@ parallel -j 2 --halt soon,fail=10 '
         samtools fixmate -@ 4 -m -u - - | \
         samtools sort -@ 5 -T "${TMPPFX}.sort" -u - | \
         samtools markdup -@ 4 - - | \
-        samtools view -@ 5 -b -q 30 -F 4 -F 256 -F 2048 - | \
+        samtools view -@ 5 -b -q 30 -F 4 -F 256 -F 2048 -F 1024 - | \
         samtools sort -@ 5 -T "${TMPPFX}.finalsort" -o "${OUTBAM}" - 
 
     samtools index "$OUTBAM"
