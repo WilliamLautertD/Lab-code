@@ -11,5 +11,6 @@ dependencies:
   - bwa
   - samtools
   - picard
+  - deeptools
   - cnvkit
   - gatk4
