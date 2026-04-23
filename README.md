@@ -4,6 +4,52 @@ deeptools tools for exploring deep sequencing data
 
 ## Mapping pipelines
 
+## Automated FASTQ to CNV workflow
+
+An end-to-end Nextflow workflow now lives in `main.nf`. It automates:
+
+1. Raw-read FastQC
+2. fastp trimming
+3. Trimmed-read FastQC
+4. BWA-MEM mapping
+5. Picard read-group addition and duplicate marking
+6. filtered BAM generation with `samtools flagstat`
+7. MultiQC summary
+8. CNV calling with CNVkit, GATK CNV, or both
+
+### Files
+
+- `config/samples.tsv` - one row per sample, with FASTQ paths and CNV reference group.
+- `nextflow.config` - reference genome, targets, output directory, executors, resources, and CNV settings.
+- `envs/qc_mapping_cnv.yaml` - Conda environment for Nextflow and the required tools.
+- `main.nf` - automated pipeline definition.
+
+### Quick start
+
+Edit `config/samples.tsv` and `nextflow.config`, then run:
+
+```bash
+conda env create -f envs/qc_mapping_cnv.yaml
+conda activate qc_mapping_cnv
+nextflow run main.nf -profile conda -resume
+```
+
+For an HPC run using the built-in SLURM profile:
+
+```bash
+nextflow run main.nf -profile slurm -resume
+```
+
+### CNV modes
+
+Set `params.cnv_method` in `nextflow.config`:
+
+- `cnvkit` - build CNVkit references from samples marked `normal`, `control`, or `reference`, then call `.called.cns` files.
+- `gatk` - preprocess target intervals, collect read counts, build a panel of normals, denoise, segment, and call `.called.seg` files.
+- `both` - run both CNVkit and GATK CNV outputs from the same marked BAMs.
+
+Samples with `cnv_role` set to `normal`, `control`, or `reference` are used for CNV references. Other roles, such as `case` or `treated`, are CNV-called against their `cnv_reference_group`.
+
 ## Copy Number Variation (CNV) Analysis Pipelines
 GATK & CNVkit Workflows for Targeted and Whole-Exome Sequencing
 
