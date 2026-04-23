@@ -50,6 +50,34 @@ Set `params.cnv_method` in `nextflow.config`:
 
 Samples with `cnv_role` set to `normal`, `control`, or `reference` are used for CNV references. Other roles, such as `case` or `treated`, are CNV-called against their `cnv_reference_group`.
 
+## Generic ChIP-seq Nextflow workflow
+
+For ChIP-seq, a separate generic Nextflow workflow is available in `chipseq_main.nf` with configuration in `chipseq_nextflow.config`.
+
+### Why this is generic
+
+- Input FASTQ files are fully controlled by `config/chipseq_samples.tsv` (no fixed filename pattern is required).
+- Sample names can be any value in the `sample` column.
+- Paths and run parameters are set in `chipseq_nextflow.config`, including reference genome, mapping filters, and bigWig options.
+
+### Files
+
+- `chipseq_main.nf` - ChIP-seq QC, trimming, mapping/filtering, optional bigWig generation, and MultiQC.
+- `chipseq_nextflow.config` - ChIP-seq pipeline parameters and runtime profiles.
+- `config/chipseq_samples.tsv` - sample sheet template; edit file paths and sample IDs freely.
+
+### Quick start
+
+```bash
+nextflow run chipseq_main.nf -c chipseq_nextflow.config -profile conda -resume
+```
+
+For SLURM:
+
+```bash
+nextflow run chipseq_main.nf -c chipseq_nextflow.config -profile slurm -resume
+```
+
 ## Copy Number Variation (CNV) Analysis Pipelines
 GATK & CNVkit Workflows for Targeted and Whole-Exome Sequencing
 
