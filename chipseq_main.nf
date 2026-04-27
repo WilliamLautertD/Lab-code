@@ -99,7 +99,7 @@ process BWA_MEM_FILTER {
     tuple val(meta), path("${meta.id}.filtered.bam"), path("${meta.id}.filtered.bam.bai"), path("${meta.id}.flagstat.tsv"), emit: bam
 
     script:
-    def ref = params.bwa_index_prefix ?: params.reference_fasta
+    def ref = params.bwa_resolved_reference ?: resolveBwaReference()
     """
     bwa mem -t ${task.cpus} ${ref} ${r1} ${r2} \
       | samtools collate -@ ${task.cpus} -O -u - \
