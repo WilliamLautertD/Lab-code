@@ -11,11 +11,10 @@ An end-to-end Nextflow workflow now lives in `main.nf`. It automates:
 1. Raw-read FastQC
 2. fastp trimming
 3. Trimmed-read FastQC
-4. BWA-MEM mapping
-5. Picard read-group addition and duplicate marking
-6. filtered BAM generation with `samtools flagstat`
-7. MultiQC summary
-8. CNV calling with CNVkit, GATK CNV, or both
+4. BWA-MEM mapping with read groups
+5. samtools duplicate marking and filtered BAM generation with `samtools flagstat`
+6. MultiQC summary
+7. CNV calling with CNVkit, GATK CNV, or both
 
 ### Files
 
@@ -60,7 +59,6 @@ For ChIP-seq, a separate generic Nextflow workflow is available in `chipseq_main
 - Sample names can be any value in the `sample` column.
 - The `control_sample` column pairs each ChIP sample with the exact Input sample ID for downstream `bamCompare` output.
 - Paths and run parameters are set in `chipseq_nextflow.config`, including reference genome, mapping filters, bigWig options, and `bamCompare` settings (ratio mode with duplicate ignoring, no scale-factor normalization).
-- `params.bwa_index_prefix` (or `params.reference_fasta`) must point to an existing BWA index basename with `.amb/.ann/.bwt/.pac/.sa` files.
 
 ### Files
 
