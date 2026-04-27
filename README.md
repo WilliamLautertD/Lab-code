@@ -58,13 +58,14 @@ For ChIP-seq, a separate generic Nextflow workflow is available in `chipseq_main
 
 - Input FASTQ files are fully controlled by `config/chipseq_samples.tsv` (no fixed filename pattern is required).
 - Sample names can be any value in the `sample` column.
-- Paths and run parameters are set in `chipseq_nextflow.config`, including reference genome, mapping filters, and bigWig options.
+- The `control_sample` column pairs each ChIP sample with the exact Input sample ID for downstream `bamCompare` output.
+- Paths and run parameters are set in `chipseq_nextflow.config`, including reference genome, mapping filters, bigWig options, and `bamCompare` settings (ratio mode with duplicate ignoring, no scale-factor normalization).
 
 ### Files
 
-- `chipseq_main.nf` - ChIP-seq QC, trimming, mapping/filtering, optional bigWig generation, and MultiQC.
+- `chipseq_main.nf` - ChIP-seq QC, trimming, mapping/filtering, optional bigWig generation, optional ChIP/Input `bamCompare`, and MultiQC.
 - `chipseq_nextflow.config` - ChIP-seq pipeline parameters and runtime profiles.
-- `config/chipseq_samples.tsv` - sample sheet template; edit file paths and sample IDs freely.
+- `config/chipseq_samples.tsv` - sample sheet template; edit file paths, sample IDs, and `control_sample` pairing.
 
 ### Quick start
 
