@@ -132,7 +132,6 @@ process BAM_COVERAGE {
     tuple val(meta), path("${meta.id}.bw"), emit: bw
 
     script:
-    def blacklist = params.blacklist_bed ? "--blackListFileName ${params.blacklist_bed}" : ''
     """
     bamCoverage \
       --bam ${bam} \
@@ -148,6 +147,36 @@ process BAM_COVERAGE {
     stub:
     """
     touch ${meta.id}.bw
+    """
+}
+
+
+process BAM_COMPARE {
+    tag "${meta.id}_vs_${controlId}"
+    publishDir "${params.outdir}/coverage/bamcompare", mode: 'copy'
+
+    input:
+    tuple val(controlId), val(meta), path(chipBam), path(chipBai), path(inputBam), path(inputBai)
+
+    output:
+    tuple val(meta), path("${meta.id}.vs.${controlId}.ratio.bw"), emit: bw
+
+    script:
+    """
+    bamCompare \
+      -b1 ${chipBam} \
+      -b2 ${inputBam} \
+      -o ${meta.id}.vs.${controlId}.ratio.bw \
+      --ignoreDuplicates \
+      --numberOfProcessors ${task.cpus} \
+      --operation ratio \
+      --smoothLength ${params.bamcompare_smooth_length} \
+      --binSize ${params.bamcompare_binsize}
+    """
+
+    stub:
+    """
+    touch ${meta.id}.vs.${controlId}.ratio.bw
     """
 }
 
@@ -171,7 +200,23 @@ process MULTIQC {
     """
 }
 
+
+def validateBwaReference() {
+    def ref = (params.bwa_index_prefix ?: params.reference_fasta)?.toString()?.trim()
+    if (!ref) {
+        error "Set either params.bwa_index_prefix or params.reference_fasta in chipseq_nextflow.config"
+    }
+
+    def expectedExts = ['.amb', '.ann', '.bwt', '.pac', '.sa']
+    def missing = expectedExts.findAll { ext -> !file("${ref}${ext}").exists() }
+    if (missing) {
+        error "BWA index files are missing for '${ref}'. Missing: ${missing.join(', ')}. Set params.bwa_index_prefix to the index basename (e.g. /path/to/hg19) or params.reference_fasta to a FASTA with generated BWA index files."
+    }
+}
+
 workflow {
+    validateBwaReference()
+
     samples_ch = Channel
         .fromPath(params.samples)
         .splitCsv(header: true, sep: '\t')
@@ -184,12 +229,21 @@ workflow {
                 error "Sample ${sampleId} is missing fastq_r1 or fastq_r2"
             }
 
+            def condition = row.condition ?: 'unspecified'
+            def controlSample = row.control_sample?.trim()
+            if (condition.toString().equalsIgnoreCase('Input')) {
+                controlSample = ''
+            } else if (!controlSample) {
+                error "Sample ${sampleId} is missing control_sample. Provide the Input sample ID to pair for bamCompare."
+            }
+
             def meta = [
                 id: sampleId,
-                condition: row.condition ?: 'unspecified',
+                condition: condition,
                 replicate: row.replicate ?: '1',
                 library: row.read_group_library ?: 'lib1',
-                unit: row.read_group_unit ?: 'unit1'
+                unit: row.read_group_unit ?: 'unit1',
+                control_sample: controlSample
             ]
             tuple(meta, file(row.fastq_r1), file(row.fastq_r2))
         }
@@ -203,6 +257,23 @@ workflow {
 
     if (params.make_bigwig) {
         BAM_COVERAGE(BWA_MEM_FILTER.out.bam)
+    }
+
+    if (params.make_bamcompare) {
+        input_bams_ch = BWA_MEM_FILTER.out.bam
+            .filter { meta, bam, bai, flagstat -> meta.condition.toString().equalsIgnoreCase('Input') }
+            .map { meta, bam, bai, flagstat -> tuple(meta.id, bam, bai) }
+
+        chip_bams_ch = BWA_MEM_FILTER.out.bam
+            .filter { meta, bam, bai, flagstat -> !meta.condition.toString().equalsIgnoreCase('Input') }
+            .map { meta, bam, bai, flagstat -> tuple(meta.control_sample, meta, bam, bai) }
+
+        chip_input_pairs_ch = chip_bams_ch.join(input_bams_ch, by: 0)
+            .map { controlId, meta, chipBam, chipBai, inputBam, inputBai ->
+                tuple(controlId, meta, chipBam, chipBai, inputBam, inputBai)
+            }
+
+        BAM_COMPARE(chip_input_pairs_ch)
     }
 
     multiqc_inputs = FASTQC_RAW.out.html
