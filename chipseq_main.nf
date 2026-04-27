@@ -132,7 +132,6 @@ process BAM_COVERAGE {
     tuple val(meta), path("${meta.id}.bw"), emit: bw
 
     script:
-    def blacklist = params.blacklist_bed ? "--blackListFileName ${params.blacklist_bed}" : ''
     """
     bamCoverage \
       --bam ${bam} \
@@ -202,49 +201,16 @@ process MULTIQC {
 }
 
 
-def resolveBwaReference() {
-    def rawRef = (params.bwa_index_prefix ?: params.reference_fasta)?.toString()?.trim()
-    if (!rawRef) {
+def validateBwaReference() {
+    def ref = (params.bwa_index_prefix ?: params.reference_fasta)?.toString()?.trim()
+    if (!ref) {
         error "Set either params.bwa_index_prefix or params.reference_fasta in chipseq_nextflow.config"
     }
 
     def expectedExts = ['.amb', '.ann', '.bwt', '.pac', '.sa']
-    def candidates = []
-
-    def addCandidate = { String c ->
-        if (c && !candidates.contains(c)) {
-            candidates << c
-        }
-    }
-
-    addCandidate(rawRef)
-    if (!rawRef.startsWith('/')) {
-        addCandidate("/${rawRef}")
-    }
-
-    if (!rawRef.endsWith('.fa') && !rawRef.endsWith('.fasta')) {
-        addCandidate("${rawRef}.fa")
-        if (!rawRef.startsWith('/')) {
-            addCandidate("/${rawRef}.fa")
-        }
-    }
-
-    for (candidate in candidates) {
-        def allExist = expectedExts.every { ext -> file("${candidate}${ext}").exists() }
-        if (allExist) {
-            return candidate
-        }
-    }
-
-    def missing = expectedExts.findAll { ext -> !file("${candidates[0]}${ext}").exists() }
-    error "BWA index files are missing for '${rawRef}'. Tried candidates: ${candidates.join(', ')}: ${missing.join(', ')}. Set params.bwa_index_prefix to the index basename (e.g. /path/to/hg19) or params.reference_fasta to a FASTA with generated BWA index files."
-}
-
-def validateBwaReference() {
-    def resolvedRef = resolveBwaReference()
-    params.bwa_resolved_reference = resolvedRef
-    if (resolvedRef != (params.bwa_index_prefix ?: params.reference_fasta)?.toString()?.trim()) {
-        log.warn "Resolved BWA reference path '${params.bwa_index_prefix ?: params.reference_fasta}' to '${resolvedRef}'. Prefer using the absolute path in config."
+    def missing = expectedExts.findAll { ext -> !file("${ref}${ext}").exists() }
+    if (missing) {
+        error "BWA index files are missing for '${ref}'. Missing: ${missing.join(', ')}. Set params.bwa_index_prefix to the index basename (e.g. /path/to/hg19) or params.reference_fasta to a FASTA with generated BWA index files."
     }
 }
 
