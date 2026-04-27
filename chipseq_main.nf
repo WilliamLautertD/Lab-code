@@ -267,7 +267,7 @@ workflow {
             .filter { meta, bam, bai, flagstat -> !meta.condition.toString().equalsIgnoreCase('Input') }
             .map { meta, bam, bai, flagstat -> tuple(meta.control_sample, meta, bam, bai) }
 
-        chip_input_pairs_ch = chip_bams_ch.join(input_bams_ch, by: 0)
+        chip_input_pairs_ch = chip_bams_ch.combine(input_bams_ch, by: 0)
             .map { controlId, meta, chipBam, chipBai, inputBam, inputBai ->
                 tuple(controlId, meta, chipBam, chipBai, inputBam, inputBai)
             }
