@@ -94,102 +94,28 @@ process FASTQC_TRIMMED {
     """
 }
 
-process BWA_MEM_SORT {
+process BWA_MEM_FILTER {
     tag "${meta.id}"
-    publishDir "${params.outdir}/mapping/sorted", mode: 'copy'
+    publishDir "${params.outdir}/mapping/bam", mode: 'copy'
 
     input:
     tuple val(meta), path(r1), path(r2)
 
     output:
-    tuple val(meta), path("${meta.id}.sorted.bam"), path("${meta.id}.sorted.bam.bai"), emit: bam
-
-    script:
-    def ref = params.bwa_index_prefix ?: params.reference_fasta
-    """
-    bwa mem -t ${task.cpus} ${ref} ${r1} ${r2} \
-      | samtools sort -@ ${task.cpus} -o ${meta.id}.sorted.bam -
-    samtools index -@ ${task.cpus} ${meta.id}.sorted.bam
-    """
-
-    stub:
-    """
-    touch ${meta.id}.sorted.bam
-    touch ${meta.id}.sorted.bam.bai
-    """
-}
-
-process ADD_READ_GROUPS {
-    tag "${meta.id}"
-    publishDir "${params.outdir}/mapping/read_groups", mode: 'copy'
-
-    input:
-    tuple val(meta), path(bam), path(bai)
-
-    output:
-    tuple val(meta), path("${meta.id}.rg.bam"), path("${meta.id}.rg.bai"), emit: bam
-
-    script:
-    """
-    picard AddOrReplaceReadGroups \
-      I=${bam} \
-      O=${meta.id}.rg.bam \
-      RGID=${meta.id} \
-      RGLB=${meta.library} \
-      RGPL=${params.read_group_platform} \
-      RGPU=${meta.unit} \
-      RGSM=${meta.id} \
-      CREATE_INDEX=true
-    """
-
-    stub:
-    """
-    touch ${meta.id}.rg.bam
-    touch ${meta.id}.rg.bai
-    """
-}
-
-process MARK_DUPLICATES {
-    tag "${meta.id}"
-    publishDir "${params.outdir}/mapping/marked", mode: 'copy'
-
-    input:
-    tuple val(meta), path(bam), path(bai)
-
-    output:
-    tuple val(meta), path("${meta.id}.marked.bam"), path("${meta.id}.marked.bai"), path("${meta.id}.duplicate_metrics.txt"), emit: bam
-
-    script:
-    """
-    picard MarkDuplicates \
-      I=${bam} \
-      O=${meta.id}.marked.bam \
-      M=${meta.id}.duplicate_metrics.txt \
-      CREATE_INDEX=true
-    """
-
-    stub:
-    """
-    touch ${meta.id}.marked.bam
-    touch ${meta.id}.marked.bai
-    touch ${meta.id}.duplicate_metrics.txt
-    """
-}
-
-process FILTER_MARKED_BAM {
-    tag "${meta.id}"
-    publishDir "${params.outdir}/mapping/marked", mode: 'copy'
-
-    input:
-    tuple val(meta), path(bam), path(bai), path(metrics)
-
-    output:
     tuple val(meta), path("${meta.id}.marked.filtered.bam"), path("${meta.id}.marked.filtered.bam.bai"), path("${meta.id}.marked.filtered.flagstat.tsv"), emit: bam
 
     script:
+    def ref = params.bwa_index_prefix ?: params.reference_fasta
+    def readGroup = "@RG\\tID:${meta.id}\\tLB:${meta.library}\\tPL:${params.read_group_platform}\\tPU:${meta.unit}\\tSM:${meta.id}"
     """
-    samtools view -@ ${task.cpus} -b -q ${params.min_mapq} -F ${params.exclude_flags} ${bam} \
+    bwa mem -t ${task.cpus} -R '${readGroup}' ${ref} ${r1} ${r2} \
+      | samtools collate -@ ${task.cpus} -O -u - \
+      | samtools fixmate -@ ${task.cpus} -m -u - - \
+      | samtools sort -@ ${task.cpus} -u - \
+      | samtools markdup -@ ${task.cpus} - - \
+      | samtools view -@ ${task.cpus} -b -q ${params.min_mapq} -F ${params.exclude_flags} - \
       | samtools sort -@ ${task.cpus} -o ${meta.id}.marked.filtered.bam -
+
     samtools index -@ ${task.cpus} ${meta.id}.marked.filtered.bam
     samtools flagstat -@ ${task.cpus} -O tsv ${meta.id}.marked.filtered.bam > ${meta.id}.marked.filtered.flagstat.tsv
     """
@@ -474,10 +400,7 @@ workflow {
     FASTQC_RAW(raw_reads_ch)
     FASTP_TRIM(samples_ch)
     FASTQC_TRIMMED(FASTP_TRIM.out.trimmed)
-    BWA_MEM_SORT(FASTP_TRIM.out.trimmed)
-    ADD_READ_GROUPS(BWA_MEM_SORT.out.bam)
-    MARK_DUPLICATES(ADD_READ_GROUPS.out.bam)
-    FILTER_MARKED_BAM(MARK_DUPLICATES.out.bam)
+    BWA_MEM_FILTER(FASTP_TRIM.out.trimmed)
 
     multiqc_inputs = FASTQC_RAW.out.html
         .mix(FASTQC_RAW.out.zip)
@@ -485,19 +408,19 @@ workflow {
         .mix(FASTQC_TRIMMED.out.zip)
         .mix(FASTP_TRIM.out.html)
         .mix(FASTP_TRIM.out.json)
-        .mix(FILTER_MARKED_BAM.out.bam.map { meta, bam, bai, flagstat -> flagstat })
+        .mix(BWA_MEM_FILTER.out.bam.map { meta, bam, bai, flagstat -> flagstat })
         .collect()
     MULTIQC(multiqc_inputs)
 
     if (cnvMethods.contains('cnvkit')) {
-        normal_bams_by_group = FILTER_MARKED_BAM.out.bam
+        normal_bams_by_group = BWA_MEM_FILTER.out.bam
             .filter { meta, bam, bai, flagstat -> normalRoles.contains(meta.role.toLowerCase()) }
             .map { meta, bam, bai, flagstat -> tuple(meta.group, bam) }
             .groupTuple()
 
         CNVKIT_REFERENCE(normal_bams_by_group)
 
-        case_bams_by_group = FILTER_MARKED_BAM.out.bam
+        case_bams_by_group = BWA_MEM_FILTER.out.bam
             .filter { meta, bam, bai, flagstat -> !normalRoles.contains(meta.role.toLowerCase()) }
             .map { meta, bam, bai, flagstat -> tuple(meta.group, meta, bam, bai, flagstat) }
 
@@ -521,7 +444,7 @@ workflow {
 
     if (cnvMethods.contains('gatk')) {
         GATK_PREPROCESS_INTERVALS()
-        gatk_count_inputs = FILTER_MARKED_BAM.out.bam.combine(GATK_PREPROCESS_INTERVALS.out.intervals)
+        gatk_count_inputs = BWA_MEM_FILTER.out.bam.combine(GATK_PREPROCESS_INTERVALS.out.intervals)
         GATK_COLLECT_COUNTS(gatk_count_inputs)
 
         normal_counts_by_group = GATK_COLLECT_COUNTS.out.counts

@@ -11,11 +11,10 @@ An end-to-end Nextflow workflow now lives in `main.nf`. It automates:
 1. Raw-read FastQC
 2. fastp trimming
 3. Trimmed-read FastQC
-4. BWA-MEM mapping
-5. Picard read-group addition and duplicate marking
-6. filtered BAM generation with `samtools flagstat`
-7. MultiQC summary
-8. CNV calling with CNVkit, GATK CNV, or both
+4. BWA-MEM mapping with read groups
+5. samtools duplicate marking and filtered BAM generation with `samtools flagstat`
+6. MultiQC summary
+7. CNV calling with CNVkit, GATK CNV, or both
 
 ### Files
 
