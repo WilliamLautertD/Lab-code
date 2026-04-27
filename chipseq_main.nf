@@ -140,8 +140,7 @@ process BAM_COVERAGE {
       --binSize ${params.bigwig_binsize} \
       --normalizeUsing ${params.bigwig_normalization} \
       --effectiveGenomeSize ${params.effective_genome_size} \
-      --numberOfProcessors ${task.cpus} \
-      ${blacklist}
+      --numberOfProcessors ${task.cpus} 
     """
 
     stub:
