@@ -6,39 +6,32 @@ library(purrr)
 library(patchwork)
 
 # read counts
-counts <- read_tsv("../seacr_top0.05_stringent/04_23_2026.tab")
+counts <- read_tsv("KDM4C_OE_H3K4me3_and_EV_H3K4me3.tab")
 
 
 # subset and keep the numeric
-counts_numeric <- counts[,4:11]
+counts_numeric <- counts[,4:5]
 
 # Make it log2 transform
 counts_log2 <- log2(counts_numeric)
 
 # Merge
-
 counts_trans <- bind_cols(counts[,1:3], counts_log2)
 names <- c("chr", 
            "start", 
            "end", 
-           "RPE_siCT1_KDM4C_Set_1_S21",
-           "RPE_siCT1_KDM4C_Set_2_S25",
-           "RPE_siCT2_KDM4C_Set_1_S22",
-           "RPE_siCT2_KDM4C_Set_2_S26",
-           "RPE_siSETD2_23_KDM4C_Set_1_S23",
-           "RPE_siSETD2_23_KDM4C_Set_2_S27",
-           "RPE_siSETD2_25_KDM4C_Set_1_S24",
-           "RPE_siSETD2_25_KDM4C_Set_2_S28")
+           "3_27_26_EV_H3K4me3_avg.bw",             # col 4 — matches original
+           "3_27_26_KDM4C_OE_H3K4me3_avg.bw")       # col 5 — matches original 
 
 colnames(counts_trans) <- names
 
 
 # Annotate
-
 # MYC region
 KDm4C_CHR   <- "chr8"
-KDm4C_START <- 127711110
-KDm4C_END   <- 127711975
+KDm4C_START <- 128744201
+KDm4C_END   <- 128756200
+
 
 PEAK_CHR   <- "chr8"
 PEAK_START <- 128980878
@@ -49,8 +42,8 @@ counts_trans_annotated <- counts_trans %>%
     gene = case_when(
       # MYC bin
       chr == KDm4C_CHR &
-        start == KDm4C_START &
-        end   == KDm4C_END ~ "MYC",
+        start <= KDm4C_START &
+        end   >= KDm4C_END ~ "MYC",
       # Peak 78610
       chr == PEAK_CHR &
         start <= PEAK_END &
@@ -66,36 +59,9 @@ counts_trans_annotated %>% filter(!is.na(gene))
 counts_trans_annotated %>% filter(gene == "MYC")
 
 # PLot 
-
-ggplot(counts_trans_annotated,
-       aes(x = `RPE_siCT1_KDM4C_Set_1_S21`,
-           y = `RPE_siCT1_KDM4C_Set_2_S25`)) +
-  geom_point(alpha = 0.2, color = "lightblue") +
-  geom_point(
-    data = subset(counts_trans_annotated, gene == "MYC"),
-    color = "red",
-    size = 2
-  ) +
-  geom_smooth(method = "lm", se = FALSE, color = "black") +
-  theme_article()
-
 # Set comparisons
 pairs <- list(
-  c("RPE_siCT1_KDM4C_Set_1_S21", "RPE_siCT2_KDM4C_Set_1_S22"),
-  c("RPE_siCT1_KDM4C_Set_2_S25", "RPE_siCT2_KDM4C_Set_2_S26"),
-  c("RPE_siSETD2_23_KDM4C_Set_1_S23",  "RPE_siSETD2_25_KDM4C_Set_1_S24"),
-  c("RPE_siSETD2_23_KDM4C_Set_2_S27", "RPE_siSETD2_25_KDM4C_Set_2_S28")
-)
-
-pairs <- list(
-  c("RPE_siCT1_KDM4C_Set_1_S21", "RPE_siSETD2_23_KDM4C_Set_1_S23"),
-  c("RPE_siCT1_KDM4C_Set_2_S25", "RPE_siSETD2_23_KDM4C_Set_1_S23"),
-  c("RPE_siCT1_KDM4C_Set_1_S21", "RPE_siSETD2_25_KDM4C_Set_1_S24"),
-  c("RPE_siCT1_KDM4C_Set_2_S25", "RPE_siSETD2_25_KDM4C_Set_1_S24"),
-  c("RPE_siCT1_KDM4C_Set_1_S21", "RPE_siSETD2_23_KDM4C_Set_2_S27"),
-  c("RPE_siCT1_KDM4C_Set_2_S25", "RPE_siSETD2_23_KDM4C_Set_2_S27"),
-  c("RPE_siCT1_KDM4C_Set_1_S21", "RPE_siSETD2_25_KDM4C_Set_2_S28"),
-  c("RPE_siCT1_KDM4C_Set_2_S25", "RPE_siSETD2_25_KDM4C_Set_2_S28")
+  c("3_27_26_EV_H3K4me3_avg.bw", "3_27_26_KDM4C_OE_H3K4me3_avg.bw")
 )
 
 plots <- map(pairs, \(p) {
@@ -115,6 +81,14 @@ plots <- map(pairs, \(p) {
     # Lower threshold line (y = x - 1, i.e. 2-fold down), red dashed
     geom_abline(intercept = -1, slope = 1,
                 color = "red", linetype = "dashed", linewidth = 0.6) +
+    
+    # Upper threshold line (y = x + 1, i.e. 2-fold up), red dashed
+    geom_abline(intercept = 0.2630344, slope = 1,
+                color = "orange", linetype = "dashed", linewidth = 0.6) +
+    # Lower threshold line (y = x - 1, i.e. 2-fold down), red dashed
+    geom_abline(intercept = -0.2630344, slope = 1,
+                color = "orange", linetype = "dashed", linewidth = 0.6) +
+    
     labs(
       x = p[1],
       y = p[2],
@@ -132,19 +106,23 @@ plots <- map(pairs, \(p) {
 combined_plot <- wrap_plots(plots)
 
 ggsave(
-  filename = "../seacr_top0.05_stringent/siCT_vs_siCT_CutTag_KDM4C.pdf",
+  filename = "EV_H3K4me3_and_KDM4C_OE_H3K4me3.pdf",
   plot = combined_plot,
   width = 15,
   height = 10
 )
 
+fold_change <- counts_trans_annotated %>% 
+  filter(gene == "MYC") %>%
+  dplyr::select(chr, start, end, 
+         `3_27_26_EV_KDM4C_4ug_avg.bw`, 
+         `3_27_26_KDM4C_OE_KDM4C_4ug_avg.bw`) %>%
+  mutate(
+    log2FC = `3_27_26_KDM4C_OE_KDM4C_4ug_avg.bw` - `3_27_26_EV_KDM4C_4ug_avg.bw`,
+    fold_change = 2^log2FC
+  )
 
-ggsave(
-  filename = "../seacr_top0.05_stringent/siCT_vs_SETD2_CutTag_KDM4C.pdf",
-  plot = combined_plot,
-  width = 18,
-  height = 10
-)
+write_tsv(fold_change, "fold_change_KDM4C_OE_KDM4C_4ug_and_EV_KDM4C_4ug.txt")
 
 
 
